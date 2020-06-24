@@ -23,7 +23,7 @@ exports.handler = async (event) => {
         console.log(request);
         const processedRequest = await imageHandler.process(request);
 
-        const headers = getResponseHeaders();
+        const headers = getResponseHeaders(null, headers["Origin"]);
         headers["Content-Type"] = request.ContentType;
         headers["Expires"] = request.Expires;
         headers["Last-Modified"] = request.LastModified;
@@ -52,7 +52,7 @@ exports.handler = async (event) => {
  * or error condition.
  * @param {boolean} isErr - has an error been thrown?
  */
-const getResponseHeaders = (isErr) => {
+const getResponseHeaders = (isErr, origin) => {
     const corsEnabled = (process.env.CORS_ENABLED === "Yes");
     const headers = {
         "Access-Control-Allow-Methods": "GET",
@@ -60,7 +60,13 @@ const getResponseHeaders = (isErr) => {
         "Access-Control-Allow-Credentials": true
     }
     if (corsEnabled) {
-        headers["Access-Control-Allow-Origin"] = process.env.CORS_ORIGIN;
+        const corsOrigins = process.env.CORS_ORIGIN.split(",");
+        headers["Access-Control-Allow-Origin"] = corsOrigins[0];
+        corsOrigins.forEach((corsOrigin) => {
+            if (corsOrigin === origin) {
+                headers["Access-Control-Allow-Origin"] = origin;   
+            }
+        });
     }
     if (isErr) {
         headers["Content-Type"] = "application/json"
